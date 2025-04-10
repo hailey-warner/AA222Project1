@@ -12,7 +12,8 @@
 =#
 
 # Example:
-# using LinearAlgebra
+using LinearAlgebra
+using Plots
 
 #=
     If you're going to include files, please do so up here. Note that they
@@ -25,6 +26,7 @@
 
 # Example
 # include("myfile.jl")
+include("plotting.jl")
 
 
 """
@@ -41,6 +43,45 @@ Returns:
     - The location of the minimum
 """
 function optimize(f, g, x0, n, prob)
-    x_best = x0
+    x_best, history = iterated_descent(f, g, x0, n)
+    #plot_history(history, f, prob)
     return x_best
 end
+
+""" Plain Old Gradient Descent """
+
+function iterated_descent(f, ∇f, x, k_max)
+    history = [copy(x)]
+    k=0
+    while count(f, ∇f) < k_max
+        #println("count: ", count(f, ∇f))
+        a = 0.001#/(1 + k) # TODO: add decaying step factor
+        x = step!(f, ∇f, x, a)
+        push!(history, copy(x))
+        k+=1
+    end
+    return x, history
+end
+
+function step!(f, ∇f, x, a)
+
+    # clipped gradient descent step
+    # grad_norm = norm(∇f(x))
+    # if grad_norm > 1.0
+    #     ∇f *= (1.0 / grad_norm)
+    # end
+
+    return x - a*∇f(x)
+end
+
+
+
+
+
+function line_search(f, x, d)
+    objective = a -> f(x + a*d)
+    a, b = bracket_minimum(objective)
+    a = minimize(objective, a, b)
+    return x + a*d
+end
+
