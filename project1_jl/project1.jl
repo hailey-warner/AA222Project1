@@ -41,7 +41,7 @@ Returns:
 """
 function optimize(f, g, x0, n, prob)
 
-    # Nesterov momentum coefficient
+    # Nesterov momentum
     β = 0.4
 
     # Step factor
@@ -52,15 +52,12 @@ function optimize(f, g, x0, n, prob)
     elseif prob=="simple3"
         a = 0.001
     else
-        a = 0.0075 #/(1 + k) # optional decaying step factor
+        a = 0.0075 #/(1 + k) # decaying step factor
     end
 
     v = zeros(length(x0)) # initial velocity for Nesterov momentum
     x_best = gradient_descent(f, g, x0, n, a, β, v, prob)
 
-    # track progress for plotting
-    history = [copy(x0)] 
-    push!(history, copy(x_best))
     return x_best
 end
 
@@ -75,4 +72,36 @@ function step!(f, ∇f, x, a, β, v)
     # Nesterov momentum
     v .= β*v - a*∇f(x + β*v)
     return x + v
+end
+
+
+
+# FOR PLOTTING ONLY
+function optimize_progress(f, g, x0, n, prob) 
+
+    # Nesterov momentum
+    β = 0.4
+
+    # Step factor
+    if prob=="simple1"
+        a = 0.001
+    elseif prob=="simple2"
+        a = 0.01
+    elseif prob=="simple3"
+        a = 0.001
+    else
+        a = 0.0075 #/(1 + k) # decaying step factor
+    end
+
+    v = zeros(length(x0)) # initial velocity for Nesterov momentum
+    x_list = [copy(x0)] 
+    x = copy(x0)
+
+    for i in 1:20 # n = 20 (don't add to count)
+        v .= β*v - a*g(x + β*v)
+        x .= x + v
+        # track progress for plotting
+        push!(x_list, copy(x))
+    end
+    return x_list
 end
