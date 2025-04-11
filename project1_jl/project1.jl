@@ -13,7 +13,6 @@
 
 # Example:
 using LinearAlgebra
-using Plots
 
 #=
     If you're going to include files, please do so up here. Note that they
@@ -26,8 +25,6 @@ using Plots
 
 # Example
 # include("myfile.jl")
-include("plotting.jl")
-
 
 """
     optimize(f, g, x0, n, prob)
@@ -43,45 +40,39 @@ Returns:
     - The location of the minimum
 """
 function optimize(f, g, x0, n, prob)
-    x_best, history = iterated_descent(f, g, x0, n)
-    #plot_history(history, f, prob)
+
+    # Nesterov momentum coefficient
+    β = 0.4
+
+    # Step factor
+    if prob=="simple1"
+        a = 0.001
+    elseif prob=="simple2"
+        a = 0.01
+    elseif prob=="simple3"
+        a = 0.001
+    else
+        a = 0.0075 #/(1 + k) # optional decaying step factor
+    end
+
+    v = zeros(length(x0)) # initial velocity for Nesterov momentum
+    x_best = gradient_descent(f, g, x0, n, a, β, v, prob)
+
+    # track progress for plotting
+    history = [copy(x0)] 
+    push!(history, copy(x_best))
     return x_best
 end
 
-""" Plain Old Gradient Descent """
-
-function iterated_descent(f, ∇f, x, k_max)
-    history = [copy(x)]
-    k=0
+function gradient_descent(f, ∇f, x, k_max, a, β, v, prob)
     while count(f, ∇f) < k_max
-        #println("count: ", count(f, ∇f))
-        a = 0.001#/(1 + k) # TODO: add decaying step factor
-        x = step!(f, ∇f, x, a)
-        push!(history, copy(x))
-        k+=1
+        x = step!(f, ∇f, x, a, β, v)
     end
-    return x, history
+    return x
 end
 
-function step!(f, ∇f, x, a)
-
-    # clipped gradient descent step
-    # grad_norm = norm(∇f(x))
-    # if grad_norm > 1.0
-    #     ∇f *= (1.0 / grad_norm)
-    # end
-
-    return x - a*∇f(x)
+function step!(f, ∇f, x, a, β, v)
+    # Nesterov momentum
+    v .= β*v - a*∇f(x + β*v)
+    return x + v
 end
-
-
-
-
-
-function line_search(f, x, d)
-    objective = a -> f(x + a*d)
-    a, b = bracket_minimum(objective)
-    a = minimize(objective, a, b)
-    return x + a*d
-end
-
